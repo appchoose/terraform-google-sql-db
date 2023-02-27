@@ -102,3 +102,13 @@ variable "unique_suffix" {
   type        = string
   default     = ""
 }
+
+variable "alerts_policies_to_snooze" {
+  description = "The list of alerts policies id to snooze during the sql export workflow"
+  type        = set(string)
+  default     = []
+  validation {
+    condition     = var.alerts_policies_to_snooze != null
+    error_message = "Must not be null."
+  }
+}

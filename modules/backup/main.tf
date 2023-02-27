@@ -47,6 +47,13 @@ resource "google_project_iam_member" "sql_backup_serviceaccount_workflow_invoker
   project = var.project_id
 }
 
+resource "google_project_iam_member" "sql_backup_serviceaccount_snooze_editor" {
+  count   = local.create_service_account ? 1 : 0
+  member  = "serviceAccount:${google_service_account.sql_backup_serviceaccount[0].email}"
+  role    = "roles/monitoring.snoozeEditor"
+  project = var.project_id
+}
+
 data "google_sql_database_instance" "backup_instance" {
   name    = var.sql_instance
   project = var.project_id
@@ -103,13 +110,14 @@ resource "google_workflows_workflow" "sql_export" {
   project         = var.project_id
   service_account = local.service_account
   source_contents = templatefile("${path.module}/templates/export.yaml.tftpl", {
-    project             = var.project_id
-    instanceName        = var.sql_instance
-    backupRetentionTime = var.backup_retention_time
-    databases           = jsonencode(var.export_databases)
-    gcsBucket           = var.export_uri
-    dbType              = split("_", data.google_sql_database_instance.backup_instance.database_version)[0]
-    compressExport      = var.compress_export
+    project                   = var.project_id
+    instanceName              = var.sql_instance
+    backupRetentionTime       = var.backup_retention_time
+    databases                 = jsonencode(var.export_databases)
+    alerts_policies_to_snooze = jsonencode(var.alerts_policies_to_snooze)
+    gcsBucket                 = var.export_uri
+    dbType                    = split("_", data.google_sql_database_instance.backup_instance.database_version)[0]
+    compressExport            = var.compress_export
   })
 }
 
