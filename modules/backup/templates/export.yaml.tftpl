@@ -19,6 +19,7 @@ main:
         - databases: ${databases}
         - database_type: ${dbType}
         - backupTime: $${string(int(sys.now()))}
+        - snoozeAlertName: '$${"SQL Export " + time.format(sys.now(), "Europe/Paris")}'
 %{ if databases == "[]" && (dbType == "POSTGRES" || dbType == "SQLSERVER") }
   - list of databases:
       call: googleapis.sqladmin.v1.databases.list
@@ -35,6 +36,26 @@ main:
               assign:
                 - databases: $${list.concat(databases, db.name)}
 
+%{ endif }
+
+%{ if length(alerts_policies_to_snooze) > 0 }
+  - start snooze on alerts:
+          call: http.post
+          args:
+              body:
+                criteria:
+                  policies: ${alerts_policies_to_snooze}
+                interval:
+                  startTime: $${time.format(sys.now())}
+                  endTime: $${time.format(sys.now() + 3600)} # assume 1 hour of mute, will be ended automatically at the end
+                displayName: $${snoozeAlertName}
+              url: https://monitoring.googleapis.com/v3/projects/${project}/snoozes
+              auth:
+                type: OAuth2
+                scopes: [
+                  "https://www.googleapis.com/auth/monitoring"
+                ]
+          result: snoozeAlert
 %{ endif }
 
 %{ if dbType == "POSTGRES" }
@@ -88,3 +109,22 @@ main:
             uri: $${"${gcsBucket}/${instanceName}-" + backupTime + %{ if compressExport == true }".sql.gz"%{ else }".sql"%{ endif }}
 %{ endif }
 
+%{ if length(alerts_policies_to_snooze) > 0 }
+  - end snooze on alerts:
+          call: http.patch
+          args:
+              body:
+                criteria:
+                  policies: ${alerts_policies_to_snooze}
+                interval:
+                  startTime: $${snoozeAlert.body.interval.startTime}
+                  endTime: $${time.format(sys.now() + 300)} # Add 5 min to give some time to the cpu usage to reduce
+                displayName: $${snoozeAlertName}
+              url: '$${"https://monitoring.googleapis.com/v3/projects/${project}/snoozes/" + text.replace_all(snoozeAlert.body.name, "projects/${project}/snoozes/", "") + "?updateMask=interval.endTime"}'
+              auth:
+                type: OAuth2
+                scopes: [
+                  "https://www.googleapis.com/auth/monitoring"
+                ]
+          result: snoozeAlertEnded
+%{ endif }
