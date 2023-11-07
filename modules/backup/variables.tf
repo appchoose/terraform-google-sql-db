@@ -121,6 +121,16 @@ variable "unique_suffix" {
   default     = ""
 }
 
+variable "alerts_policies_to_snooze" {
+  description = "The list of alerts policies id to snooze during the sql export workflow"
+  type        = set(string)
+  default     = []
+  validation {
+    condition     = var.alerts_policies_to_snooze != null
+    error_message = "Must not be null."
+  }
+}
+
 variable "log_db_name_to_export" {
   description = "Whether or not to log database name in the export workflow"
   type        = bool
