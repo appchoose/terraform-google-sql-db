@@ -47,6 +47,13 @@ resource "google_project_iam_member" "sql_backup_serviceaccount_workflow_invoker
   project = var.project_id
 }
 
+resource "google_project_iam_member" "sql_backup_serviceaccount_snooze_editor" {
+  count   = local.create_service_account ? 1 : 0
+  member  = "serviceAccount:${google_service_account.sql_backup_serviceaccount[0].email}"
+  role    = "roles/monitoring.snoozeEditor"
+  project = var.project_id
+}
+
 data "google_sql_database_instance" "backup_instance" {
   name    = var.sql_instance
   project = var.project_id
@@ -113,6 +120,7 @@ resource "google_workflows_workflow" "sql_export" {
     compressExport         = var.compress_export
     enableConnectorParams  = var.enable_connector_params
     connectorParamsTimeout = var.connector_params_timeout
+    alerts_policies_to_snooze = jsonencode(var.alerts_policies_to_snooze)
     logDbName              = var.log_db_name_to_export
     serverlessExport       = var.use_serverless_export
   })
