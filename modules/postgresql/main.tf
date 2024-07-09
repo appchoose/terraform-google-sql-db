@@ -43,6 +43,8 @@ locals {
 
   // Force the usage of connector_enforcement
   connector_enforcement = var.connector_enforcement ? "REQUIRED" : "NOT_REQUIRED"
+
+  database_name = var.enable_default_db ? google_sql_database.default[0].name : (length(local.databases) > 0 ? google_sql_database.additional_databases[0].name : "")
 }
 
 resource "random_id" "suffix" {
@@ -231,6 +233,7 @@ resource "google_sql_database" "additional_databases" {
 }
 
 resource "random_password" "user-password" {
+  count = var.enable_default_user ? 1 : 0
   keepers = {
     name = google_sql_database_instance.default.name
   }
@@ -275,7 +278,7 @@ resource "google_sql_user" "default" {
   name     = var.user_name
   project  = var.project_id
   instance = google_sql_database_instance.default.name
-  password = var.user_password == "" ? random_password.user-password.result : var.user_password
+  password = var.user_password == "" ? random_password.user-password[0].result : var.user_password
   depends_on = [
     null_resource.module_depends_on,
     google_sql_database_instance.default,

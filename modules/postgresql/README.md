@@ -13,7 +13,7 @@ Basic usage of this module is as follows:
 ```hcl
 module "pg" {
   source  = "terraform-google-modules/sql-db/google//modules/postgresql"
-  version = "~> 20.0"
+  version = "~> 20.2"
 
   name                 = var.pg_ha_name
   random_instance_name = true
@@ -179,6 +179,7 @@ module "pg" {
 |------|-------------|
 | additional\_users | List of maps of additional users and passwords |
 | dns\_name | DNS name of the instance endpoint |
+| env\_vars | Exported environment variables |
 | generated\_user\_password | The auto generated default user password if not input password was provided |
 | iam\_users | The list of the IAM users with access to the CloudSQL instance |
 | instance\_connection\_name | The connection name of the master instance to be used in connection strings |
