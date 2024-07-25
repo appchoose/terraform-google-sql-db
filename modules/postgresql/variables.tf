@@ -277,6 +277,7 @@ variable "read_replicas" {
       psc_allowed_consumer_projects                 = optional(list(string), [])
     })
     encryption_key_name = optional(string)
+    data_cache_enabled  = optional(bool)
   }))
   default = []
 }
@@ -438,4 +439,16 @@ variable "data_cache_enabled" {
   description = "Whether data cache is enabled for the instance. Defaults to false. Feature is only available for ENTERPRISE_PLUS tier and supported database_versions"
   type        = bool
   default     = false
+}
+
+variable "enable_google_ml_integration" {
+  description = "Enable database ML integration"
+  type        = bool
+  default     = false
+}
+
+variable "database_integration_roles" {
+  description = "The roles required by default database instance service account for integration with GCP services"
+  type        = list(string)
+  default     = []
 }

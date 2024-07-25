@@ -19,7 +19,7 @@ locals {
   create_service_account = var.service_account == null || var.service_account == "" ? true : false
   service_account        = local.create_service_account ? google_service_account.sql_backup_serviceaccount[0].email : var.service_account
   backup_name            = "sql-backup-${var.sql_instance}${var.unique_suffix}"
-  role_name              = var.enable_export_backup ? "roles/cloudsql.editor" : "roles/cloudsql.viewer"
+  role_name              = var.enable_export_backup ? "roles/cloudsql.admin" : "roles/cloudsql.viewer"
   export_name            = var.use_sql_instance_replica_in_exporter ? "sql-export-${var.sql_instance_replica}${var.unique_suffix}" : "sql-export-${var.sql_instance}${var.unique_suffix}"
   notification_channels  = var.create_notification_channel ? concat(var.notification_channels, [google_monitoring_notification_channel.email[0].id]) : var.notification_channels
 }
@@ -42,12 +42,20 @@ resource "google_project_iam_member" "sql_backup_serviceaccount_sql_admin" {
   member  = "serviceAccount:${google_service_account.sql_backup_serviceaccount[0].email}"
   role    = local.role_name
   project = var.project_id
-  condition {
-    title      = "Limit access to instance ${var.sql_instance}"
-    expression = <<-EOT
-      (resource.type == "sqladmin.googleapis.com/Instance" &&
-       resource.name == "projects/${var.project_id}/instances/${var.sql_instance}")
-    EOT
+  # It is not possible to limit access to a specific instance when exports are enabled.
+  # The export workflow needs to be able to list databases for the database instance.
+  # It currently is not possible to define a condition that limits access to these
+  # sub-resources/database resources. Only Instances and BackupRuns are supported:
+  # https://cloud.google.com/iam/docs/conditions-resource-attributes#resource-type
+  dynamic "condition" {
+    for_each = var.enable_export_backup ? [] : [1]
+    content {
+      title      = "Limit access to instance ${var.sql_instance}"
+      expression = <<-EOT
+        (resource.type == "sqladmin.googleapis.com/Instance" &&
+         resource.name == "projects/${var.project_id}/instances/${var.sql_instance}")
+      EOT
+    }
   }
 }
 

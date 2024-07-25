@@ -16,7 +16,7 @@
 
 module "project" {
   source  = "terraform-google-modules/project-factory/google"
-  version = "~> 14.0"
+  version = "~> 15.0"
 
   name              = "ci-sql-db"
   random_project_id = "true"
@@ -46,4 +46,10 @@ resource "google_service_account" "cloudsql_pg_sa" {
 resource "google_service_account" "cloudsql_mysql_sa" {
   project    = module.project.project_id
   account_id = "cloudsql-mysql-sa-01"
+}
+
+resource "google_project_service_identity" "workflos_sa" {
+  provider = google-beta
+  project  = module.project.project_id
+  service  = "workflows.googleapis.com"
 }
