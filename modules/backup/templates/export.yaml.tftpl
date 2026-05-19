@@ -47,7 +47,7 @@ main:
                   policies: ${alerts_policies_to_snooze}
                 interval:
                   startTime: $${time.format(sys.now())}
-                  endTime: $${time.format(sys.now() + 3600)} # assume 1 hour of mute, will be ended automatically at the end
+                  endTime: $${time.format(sys.now() + 7200)} # assume 1 hour of mute, will be ended automatically at the end
                 displayName: $${snoozeAlertName}
               url: https://monitoring.googleapis.com/v3/projects/${project}/snoozes
               auth:
